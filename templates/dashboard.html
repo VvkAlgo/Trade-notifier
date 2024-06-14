@@ -1,0 +1,217 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Dashboard</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center mb-4">Stock Dashboard</h2>
+        <form id="stock-form">
+            <div class="form-row">
+                <div class="col">
+                    <input type="text" id="stock_name" name="stock_name" class="form-control" placeholder="Stock Name" required>
+                </div>
+                <div class="col">
+                    <input type="number" id="stock_volume" name="stock_volume" class="form-control" placeholder="Quantity" required>
+                </div>
+                <div class="col">
+                    <input type="number" id="traded_price" name="traded_price" class="form-control" placeholder="Traded Price" required>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">Add Stock</button>
+                </div>
+            </div>
+        </form>
+        <table class="table mt-4">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Stock Name</th>
+                    <th>Current Trading Price</th>
+                    <th>Traded Price</th>
+                    <th>Total Volume Purchased</th>
+                    <th>Invested Total</th>
+                    <th>Total Return</th>
+                    <th>Profit/Loss</th>
+                    <th>Invested Return %</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="stock-data">
+                <!-- Dynamic data will be inserted here -->
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4"><strong>Grand Total Invested</strong></td>
+                    <td id="grand-total-invested"></td>
+                </tr>
+                <tr>
+                    <td colspan="4"><strong>Grand Total Return</strong></td>
+                    <td id="grand-total-return"></td>
+                </tr>
+                <tr>
+                    <td colspan="4">
+                        <strong>Grand Profit/Loss</strong></td>
+                        <td id="grand-total-profit-loss"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="4
+                        <strong>Grand Profit/Loss</strong></td>
+                        <td id="grand-total-profit-loss"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><strong>Profit Percent</strong></td>
+                        <td id="profit-percent"></td>
+                    </tr>
+            </tfoot>
+        </table>
+        <button onclick="logout()" class="btn btn-danger mt-3">Logout</button>
+        <div id="footer-text" class="text-center mt-3">
+            <!-- Center bottom text -->
+        </div>
+        <div class="center-bottom">
+            Created by VivekU
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        function fetchStockData() {
+            fetch('/update')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Fetched data:', data); // Log fetched data for debugging
+                    const tableBody = document.getElementById('stock-data');
+                    const grandTotalInvestedCell = document.getElementById('grand-total-invested');
+                    const grandTotalReturnCell = document.getElementById('grand-total-return');
+                    const grandTotalProfitLossCell = document.getElementById('grand-total-profit-loss');
+                    const profitPercentCell = document.getElementById('profit-percent');
+
+                    tableBody.innerHTML = ''; // Clear previous data
+
+                    let grandTotalInvested = 0;
+                    let grandTotalReturn = 0;
+                    let grandTotalProfitLoss = 0;
+                    let profitPercent = 0;
+
+                    data.data.forEach(stock => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${stock["Stock Name"] || ''}</td>
+                            <td>₹${(stock["Current Trading Price"] || 0).toFixed(2)}</td>
+                            <td>₹${(stock["Traded Price"] || 0).toFixed(2)}</td>
+                            <td>${stock["Total Volume Purchased"] || 0}</td>
+                            <td>₹${(stock["Invested Total"] || 0).toFixed(2)}</td>
+                            <td>₹${(stock["Total Return"] || 0).toFixed(2)}</td>
+                            <td style="background-color: ${stock["Profit/Loss"] >= 0 ? 'lightgreen' : 'lightcoral'}">₹${(stock["Profit/Loss"] || 0).toFixed(2)}</td>
+                            <td>${(stock["Invested Return%"] || 0).toFixed(2)}%</td>
+                        `;
+                        tableBody.appendChild(row);
+
+                        grandTotalInvested += stock["Invested Total"] || 0;
+                        grandTotalReturn += stock["Total Return"] || 0;
+                        grandTotalProfitLoss += stock["Profit/Loss"] || 0;
+                        profitPercent = data.total_profit_percent || 0; // Assuming this is calculated on the backend
+                    });
+
+                    grandTotalInvestedCell.textContent = `₹${grandTotalInvested.toFixed(2)}`;
+                    grandTotalReturnCell.textContent = `₹${grandTotalReturn.toFixed(2)}`;
+                    grandTotalProfitLossCell.textContent = `₹${grandTotalProfitLoss.toFixed(2)}`;
+                    profitPercentCell.textContent = `${profitPercent.toFixed(2)}%`;
+                })
+                .catch(error => {
+                    console.error('Error updating dashboard:', error);
+                });
+        }
+
+        document.getElementById('stock-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const stockName = document.getElementById('stock_name').value;
+            const stockVolume = document.getElementById('stock_volume').value;
+            const tradedPrice = document.getElementById('traded_price').value;
+            fetch('/add_stock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    stock_name: stockName,
+                    stock_volume: stockVolume,
+                    traded_price: tradedPrice
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                fetchStockData(); // Refresh data after adding stock
+            })
+            .catch(error => {
+                console.error('Error adding stock:', error);
+            });
+        });
+
+        function deleteStock(stockName) {
+    console.log("Deleting stock:", stockName);  // Debug log
+
+    fetch('/delete_stock', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ stock_name: stockName })  // Sending stock name to delete
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log("Response from server:", data);  // Debug log
+
+        // Assuming the deletion was successful, remove the stock from the frontend
+        const rows = document.querySelectorAll('#stock-data tr');
+        rows.forEach(row => {
+            if (row.cells[0].textContent.trim() === stockName) {  // Assuming stock name is in the first column
+                row.remove();
+            }
+        });
+
+        alert(data.message);  // Alert the user about the deletion
+    })
+    .catch(error => {
+        console.error('Error deleting stock:', error);
+    });
+}
+
+
+        function logout() {
+            fetch('/logout').then(() => {
+                window.location.href = '/';
+            });
+        }
+
+        fetchStockData(); // Initial fetch when page loads
+        setInterval(fetchStockData, 60000); // Refresh data every 60 seconds
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission();
+            }
+        });
+    </script>
+</body>
+</html>
+

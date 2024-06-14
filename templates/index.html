@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login/Signup</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+<style>
+    .center-bottom {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        text-align: center;
+        background-color: #f0f0f0; /* Adjust as per your design */
+        padding: 10px 0; /* Adjust padding as needed */
+        color: #333; /* Adjust text color */
+        font-size: 14px; /* Adjust font size */
+    }
+</style>
+</head>
+<body>
+<div class="container">
+<h1 class="text-center mb-4">Login/Signup Page</h1>
+<form class="text-center">
+<div class="form-group">
+<label for="username">Username:</label>
+<input type="text" id="username" name="username" class="form-control" required><br><br>
+<label for="password">Password:</label>
+<input type="password" id="password" name="password" class="form-control" required><br><br>
+<button type="submit" class="btn btn-primary">Login</button>
+<button type="submit" class="btn btn-primary">Signup</button>
+</div>
+</form>
+</div>
+<div class="center-bottom">
+    Created by VivekU
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

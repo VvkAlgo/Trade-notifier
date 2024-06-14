@@ -1,0 +1,7 @@
+Flask
+gunicorn
+yfinance
+pandas
+flask_cors
+sqlite3
+
