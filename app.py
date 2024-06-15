@@ -2,25 +2,38 @@ from flask import Flask, request, jsonify, session, redirect, url_for, render_te
 import pandas as pd
 import yfinance as yf
 import sqlite3
+import json
 from flask_cors import CORS
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'  # Necessary for session management
-app.config['CORS_HEADERS'] = 'Content-Type' 
+app.config['CORS_HEADERS'] = 'Content-Type'
 CORS(app)
 
-# Sample user data (for demonstration purposes)
-users = {
-    "user1": {
-        "password": "password1",
-        "stocks": [],
-        "volumes": [],
-        "traded_prices": []
-    }
-}
+# Database connection
+def get_db_connection():
+    conn = sqlite3.connect('database.db')  # Ensure persistent storage path
+    conn.row_factory = sqlite3.Row
+    return conn
 
-# Counter to generate unique IDs for stocks
-next_stock_id = 1
+# Create tables if they do not exist
+def create_tables():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS users (
+        username TEXT PRIMARY KEY,
+        password TEXT,
+        stocks TEXT,
+        volumes TEXT,
+        traded_prices TEXT
+    )
+    ''')
+    conn.commit()
+    conn.close()
+
+# Call create_tables to ensure the table is created only if it does not exist
+create_tables()
 
 def fetch_real_time_price(stock_name):
     stock = yf.Ticker(stock_name)
@@ -56,14 +69,23 @@ def update_data():
         return redirect(url_for('login'))
 
     user = session['user']
-    user_data = users.get(user)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users WHERE username = ?', (user,))
+    user_data = cursor.fetchone()
+    conn.close()
+    
     if not user_data:
         return jsonify({"error": "User data not found"}), 404
 
+    stocks = json.loads(user_data['stocks'])
+    volumes = json.loads(user_data['volumes'])
+    traded_prices = json.loads(user_data['traded_prices'])
+
     df = pd.DataFrame({
-        "Stock Name": user_data["stocks"],
-        "Total Volume Purchased": user_data["volumes"],
-        "Traded Price": user_data["traded_prices"]
+        "Stock Name": stocks,
+        "Total Volume Purchased": volumes,
+        "Traded Price": traded_prices
     })
 
     df = update_prices(df)
@@ -83,7 +105,11 @@ def add_stock():
         return redirect(url_for('login'))
 
     user = session['user']
-    user_data = users.get(user)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT * FROM users WHERE username = ?', (user,))
+    user_data = cursor.fetchone()
+    
     if not user_data:
         return jsonify({"error": "User data not found"}), 404
 
@@ -95,30 +121,36 @@ def add_stock():
     if not new_stock or not new_volume or not traded_price:
         return jsonify({"error": "Incomplete data provided"}), 400
 
-    user_data["stocks"].append(new_stock)
-    user_data["volumes"].append(new_volume)
-    user_data["traded_prices"].append(traded_price)
+    stocks = json.loads(user_data['stocks'])
+    volumes = json.loads(user_data['volumes'])
+    traded_prices = json.loads(user_data['traded_prices'])
+
+    stocks.append(new_stock)
+    volumes.append(new_volume)
+    traded_prices.append(traded_price)
+
+    cursor.execute('UPDATE users SET stocks = ?, volumes = ?, traded_prices = ? WHERE username = ?',
+                   (json.dumps(stocks), json.dumps(volumes), json.dumps(traded_prices), user))
+    conn.commit()
+    conn.close()
 
     return jsonify({"message": "Stock added successfully!"}), 200
-
-def fetch_real_time_price(stock_name):
-    stock = yf.Ticker(stock_name)
-    price = stock.history(period='1d')['Close'][0]
-    return price
 
 @app.route('/delete_stock', methods=['POST'])
 def delete_stock():
     try:
-        # Check if user is logged in
         if 'user' not in session:
             return jsonify({"error": "User not logged in"}), 401
 
         user = session['user']
-        user_data = users.get(user)
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ?', (user,))
+        user_data = cursor.fetchone()
+        
         if not user_data:
             return jsonify({"error": "User data not found"}), 404
 
-        # Retrieve stock name from request data
         data = request.json
         stock_name = data.get('stock_name')
 
@@ -128,27 +160,24 @@ def delete_stock():
         print(f"Deleting stock {stock_name} for user {user}")
         print(f"Current user data: {user_data}")
 
-        # Verify user_data["stocks"] structure
-        if not isinstance(user_data["stocks"], list):
-            return jsonify({"error": "User stocks data is not a list"}), 500
-        
-        # Find the index of the stock based on the stock name
-        index_to_delete = None
-        for i, stock in enumerate(user_data["stocks"]):
-            if isinstance(stock, dict) and stock.get("Stock Name") == stock_name:
-                index_to_delete = i
-                break
+        stocks = json.loads(user_data['stocks'])
+        volumes = json.loads(user_data['volumes'])
+        traded_prices = json.loads(user_data['traded_prices'])
 
-        if index_to_delete is not None:
-            # Delete stock from user_data
-            del user_data["stocks"][index_to_delete]
-            del user_data["volumes"][index_to_delete]
-            del user_data["traded_prices"][index_to_delete]
+        if stock_name in stocks:
+            index_to_delete = stocks.index(stock_name)
+            del stocks[index_to_delete]
+            del volumes[index_to_delete]
+            del traded_prices[index_to_delete]
 
-            # Optionally, update a persistent database here
+            cursor.execute('UPDATE users SET stocks = ?, volumes = ?, traded_prices = ? WHERE username = ?',
+                           (json.dumps(stocks), json.dumps(volumes), json.dumps(traded_prices), user))
+            conn.commit()
+            conn.close()
 
             return jsonify({"message": "Stock deleted successfully!"}), 200
         else:
+            conn.close()
             return jsonify({"error": "Stock not found"}), 404
 
     except Exception as e:
@@ -160,7 +189,13 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if username in users and users[username]['password'] == password:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user_data = cursor.fetchone()
+        conn.close()
+        
+        if user_data and user_data['password'] == password:
             session['user'] = username
             return redirect(url_for('dashboard'))
         else:
@@ -172,15 +207,18 @@ def signup():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if username in users:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user_data = cursor.fetchone()
+        
+        if user_data:
             flash('Username already exists')
         else:
-            users[username] = {
-                "password": password,
-                "stocks": [],
-                "volumes": [],
-                "traded_prices": []
-            }
+            cursor.execute('INSERT INTO users (username, password, stocks, volumes, traded_prices) VALUES (?, ?, ?, ?, ?)',
+                           (username, password, '[]', '[]', '[]'))
+            conn.commit()
+            conn.close()
             flash('Signup successful, please login')
             return redirect(url_for('login'))
     return render_template('signup.html')
@@ -189,7 +227,17 @@ def signup():
 def dashboard():
     if 'user' not in session:
         return redirect(url_for('login'))
-    return render_template('dashboard.html', stocks=users[session['user']]['stocks'])
+    user = session['user']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT stocks FROM users WHERE username = ?', (user,))
+    user_data = cursor.fetchone()
+    conn.close()
+    
+    if user_data:
+        stocks = json.loads(user_data['stocks'])
+        return render_template('dashboard.html', stocks=stocks)
+    return redirect(url_for('login'))
 
 @app.route('/logout')
 def logout():
@@ -202,4 +250,3 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
