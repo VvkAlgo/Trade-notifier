@@ -7,13 +7,15 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
+
 <body>
     <div class="container">
         <h2 class="text-center mb-4">Stock Dashboard</h2>
         <form id="stock-form">
             <div class="form-row">
                 <div class="col">
-                    <input type="text" id="stock_name" name="stock_name" class="form-control" placeholder="Stock Name" required>
+                    <input type="text" id="stock_name" name="stock_name" class="form-control" placeholder="Enter stock symbol..." required>
+                    <span class="text-muted">Find your stock symbol <a href="https://finance.yahoo.com/" target="_blank">here</a></span>
                 </div>
                 <div class="col">
                     <input type="number" id="stock_volume" name="stock_volume" class="form-control" placeholder="Quantity" required>
@@ -67,8 +69,9 @@
             <!-- Center bottom text -->
         </div>
         <div class="center-bottom">
-            Created by VivekU
+            Created by <a href="https://www.linkedin.com/in/vivek-upadhyay-6689b4184" target="_blank">VivekU</a>
         </div>
+        
     </div>
 
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
@@ -101,7 +104,7 @@
                     data.data.forEach(stock => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td>${stock["Stock Name"] || ''}</td>
+                            <td><a href="https://finance.yahoo.com/quote/${stock["Stock Name"]}" target="_blank">${stock["Stock Name"]}</a></td>
                             <td>₹${(stock["Current Trading Price"] || 0).toFixed(2)}</td>
                             <td>₹${(stock["Traded Price"] || 0).toFixed(2)}</td>
                             <td>${stock["Total Volume Purchased"] || 0}</td>
