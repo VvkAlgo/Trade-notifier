@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -55,19 +53,13 @@
                     <td id="grand-total-return"></td>
                 </tr>
                 <tr>
-                    <td colspan="4">
-                        <strong>Grand Profit/Loss</strong></td>
-                        <td id="grand-total-profit-loss"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="4
-                        <strong>Grand Profit/Loss</strong></td>
-                        <td id="grand-total-profit-loss"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="4"><strong>Profit Percent</strong></td>
-                        <td id="profit-percent"></td>
-                    </tr>
+                    <td colspan="4"><strong>Grand Profit/Loss</strong></td>
+                    <td id="grand-total-profit-loss"></td>
+                </tr>
+                <tr>
+                    <td colspan="4"><strong>Profit Percent</strong></td>
+                    <td id="profit-percent"></td>
+                </tr>
             </tfoot>
         </table>
         <button onclick="logout()" class="btn btn-danger mt-3">Logout</button>
@@ -117,6 +109,7 @@
                             <td>₹${(stock["Total Return"] || 0).toFixed(2)}</td>
                             <td style="background-color: ${stock["Profit/Loss"] >= 0 ? 'lightgreen' : 'lightcoral'}">₹${(stock["Profit/Loss"] || 0).toFixed(2)}</td>
                             <td>${(stock["Invested Return%"] || 0).toFixed(2)}%</td>
+                            <td><button class="btn btn-danger btn-sm" onclick="deleteStock('${stock["Stock Name"]}')">Delete</button></td>
                         `;
                         tableBody.appendChild(row);
 
@@ -163,39 +156,36 @@
         });
 
         function deleteStock(stockName) {
-    console.log("Deleting stock:", stockName);  // Debug log
+            const rows = document.querySelectorAll('#stock-data tr');
+            const stockCount = rows.length;
 
-    fetch('/delete_stock', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ stock_name: stockName })  // Sending stock name to delete
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
+            fetch('/delete_stock', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ stock_name: stockName })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Response from server:", data); // Debug log
+                alert(data.message); // Alert the user about the deletion
+
+                if (stockCount === 1) {
+                    window.location.reload(); // Refresh the page if this was the last stock
+                } else {
+                    fetchStockData(); // Refresh data after deleting stock
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting stock:', error);
+            });
         }
-        return response.json();
-    })
-    .then(data => {
-        console.log("Response from server:", data);  // Debug log
-
-        // Assuming the deletion was successful, remove the stock from the frontend
-        const rows = document.querySelectorAll('#stock-data tr');
-        rows.forEach(row => {
-            if (row.cells[0].textContent.trim() === stockName) {  // Assuming stock name is in the first column
-                row.remove();
-            }
-        });
-
-        alert(data.message);  // Alert the user about the deletion
-    })
-    .catch(error => {
-        console.error('Error deleting stock:', error);
-    });
-}
-
 
         function logout() {
             fetch('/logout').then(() => {
@@ -214,4 +204,3 @@
     </script>
 </body>
 </html>
-
