@@ -3,4 +3,5 @@ gunicorn
 yfinance
 pandas
 flask_cors
+flask_mail
 
