@@ -3,13 +3,25 @@ import pandas as pd
 import yfinance as yf
 import sqlite3
 import json
+import os
 from flask_cors import CORS
+from flask_mail import Mail, Message
 
 app = Flask(__name__)
+app.static_folder = 'static'
 app.secret_key = 'supersecretkey'  # Necessary for session management
 app.config['CORS_HEADERS'] = 'Content-Type'
 CORS(app)
 
+# Flask-Mail configuration
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'oo7dwaynerock@gmail.com'  # Update with your Gmail username
+app.config['MAIL_PASSWORD'] = 'ignt udiu ypac kvzb'         # Update with your Gmail password
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+
+mail = Mail(app)
 # Database connection
 def get_db_connection():
     conn = sqlite3.connect('database.db')  # Ensure persistent storage path
@@ -23,15 +35,17 @@ def create_tables():
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS users (
         username TEXT PRIMARY KEY,
+        name TEXT,
         password TEXT,
         stocks TEXT,
         volumes TEXT,
-        traded_prices TEXT
+        traded_prices TEXT,
+        alert_sent INTEGER DEFAULT 0,
+        alert_sent_negative INTEGER DEFAULT 0
     )
     ''')
     conn.commit()
     conn.close()
-
 # Call create_tables to ensure the table is created only if it does not exist
 create_tables()
 
@@ -63,6 +77,86 @@ def calculate_totals(df):
     total_profit_percent = ((total_return - invested_total) / invested_total) * 100
     return invested_total.round(2), total_return.round(2), total_profit_loss.round(2), total_profit_percent.round(2)
 
+def send_email(username, subject, message):
+    msg = Message(subject, sender='your_email@gmail.com', recipients=[username])
+    msg.body = message
+    try:
+        mail.send(msg)
+        print(f"Email sent to {username} with message: {message}")
+        return True
+    except Exception as e:
+        print(f"Failed to send email to {username}: {str(e)}")
+        return False
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        name = request.form.get('name')
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
+        user_data = cursor.fetchone()
+        
+        if user_data:
+            flash('Email already exists. Please use a different email.')
+            conn.close()
+        else:
+            cursor.execute('INSERT INTO users (username, password, name, stocks, volumes, traded_prices, alert_sent,alert_sent_negative) VALUES (?, ?, ?, ?, ?,?,?, ?)',
+                           (username, password, name, '[]','[]', '[]',0,0))
+            conn.commit()
+            conn.close()
+            flash('Account created successfully. Please log in.')
+            return redirect(url_for('login'))
+
+    return render_template('signup.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM users WHERE username = ? AND password = ?', (username, password))
+        user = cursor.fetchone()
+        
+        if user:
+            session['user'] = username
+            conn.close()
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Login Unsuccessful. Please check email and password')
+            conn.close()
+
+    return render_template('login.html')
+# Continued from Part 1
+
+@app.route('/dashboard')
+def dashboard():
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
+    user = session['user']
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('SELECT name,stocks FROM users WHERE username = ?', (user,))
+    user_data = cursor.fetchone()
+
+    if user_data:
+        name=user_data['name']
+        stocks = json.loads(user_data['stocks'])
+        print(f"User data found: {user_data}") 
+        return render_template('dashboard.html',stocks=stocks,name=name)
+    else:
+        flash('User data not found.')
+    
+    conn.close()
+    return redirect(url_for('login'))
+    
 @app.route('/update', methods=['GET'])
 def update_data():
     if 'user' not in session:
@@ -73,31 +167,65 @@ def update_data():
     cursor = conn.cursor()
     cursor.execute('SELECT * FROM users WHERE username = ?', (user,))
     user_data = cursor.fetchone()
-    conn.close()
-    
+
     if not user_data:
         return jsonify({"error": "User data not found"}), 404
 
+    # Retrieve user's name
+    name=user_data['name']
     stocks = json.loads(user_data['stocks'])
     volumes = json.loads(user_data['volumes'])
     traded_prices = json.loads(user_data['traded_prices'])
 
-    df = pd.DataFrame({
-        "Stock Name": stocks,
-        "Total Volume Purchased": volumes,
-        "Traded Price": traded_prices
-    })
+    # Calculate only if there are stocks in the portfolio
+    if stocks:
+        df = pd.DataFrame({
+            "Stock Name": stocks,
+            "Total Volume Purchased": volumes,
+            "Traded Price": traded_prices
+        })
 
-    df = update_prices(df)
-    invested_total, total_return, total_profit_loss, total_profit_percent = calculate_totals(df)
-    df = df.round(2)
-    return jsonify({
-        "data": df.to_dict(orient='records'),
-        "invested_total": invested_total,
-        "total_return": total_return,
-        "total_profit_loss": total_profit_loss,
-        "total_profit_percent": total_profit_percent
-    })
+        df = update_prices(df)
+        invested_total, total_return, total_profit_loss, total_profit_percent = calculate_totals(df)
+        df = df.round(2)
+        
+  
+        # Check if alert needs to be sent for exceeding 10% profit
+        if user_data['alert_sent'] == 0 and total_profit_percent > 10:
+            send_email(user, "Portfolio Alert", f"Congratulations {name}!! Your portfolio has exceeded 10% profit.")
+            cursor.execute('UPDATE users SET alert_sent = 1 WHERE username = ?', (user,))
+            conn.commit()
+
+        # Check if alert needs to be reset (portfolio goes below 10% profit)
+        if user_data['alert_sent'] == 1 and total_profit_percent < 10:
+            cursor.execute('UPDATE users SET alert_sent = 0 WHERE username = ?', (user,))
+            conn.commit()
+
+        # Check if alert needs to be sent for going below 0% profit
+        if user_data['alert_sent_negative'] == 0 and total_profit_percent < 0:
+            send_email(user, "Portfolio Alert", f"Alert {name}!! Your portfolio has gone below 0% profit.")
+            cursor.execute('UPDATE users SET alert_sent_negative = 1 WHERE username = ?', (user,))
+            conn.commit()
+
+        # Check if alert needs to be reset (portfolio goes above 0% profit)
+        if user_data['alert_sent_negative'] == 1 and total_profit_percent >= 0:
+            cursor.execute('UPDATE users SET alert_sent_negative = 0 WHERE username = ?', (user,))
+            conn.commit()
+
+        conn.close()
+
+        return jsonify({
+            "data": df.to_dict(orient='records'),
+            "invested_total": invested_total,
+            "total_return": total_return,
+            "total_profit_loss": total_profit_loss,
+            "total_profit_percent": total_profit_percent
+        })
+
+    # If no stocks are present, notify the user that the portfolio is empty
+    else:
+        conn.close()
+        return jsonify({"message": "Your portfolio is currently empty."}), 200
 
 @app.route('/add_stock', methods=['POST'])
 def add_stock():
@@ -184,61 +312,6 @@ def delete_stock():
         print(f"Error deleting stock: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-        user_data = cursor.fetchone()
-        conn.close()
-        
-        if user_data and user_data['password'] == password:
-            session['user'] = username
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid username or password')
-    return render_template('login.html')
-
-@app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM users WHERE username = ?', (username,))
-        user_data = cursor.fetchone()
-        
-        if user_data:
-            flash('Username already exists')
-        else:
-            cursor.execute('INSERT INTO users (username, password, stocks, volumes, traded_prices) VALUES (?, ?, ?, ?, ?)',
-                           (username, password, '[]', '[]', '[]'))
-            conn.commit()
-            conn.close()
-            flash('Signup successful, please login')
-            return redirect(url_for('login'))
-    return render_template('signup.html')
-
-@app.route('/dashboard')
-def dashboard():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-    user = session['user']
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('SELECT stocks FROM users WHERE username = ?', (user,))
-    user_data = cursor.fetchone()
-    conn.close()
-    
-    if user_data:
-        stocks = json.loads(user_data['stocks'])
-        return render_template('dashboard.html', stocks=stocks)
-    return redirect(url_for('login'))
-
 @app.route('/logout')
 def logout():
     session.pop('user', None)
@@ -250,3 +323,5 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
