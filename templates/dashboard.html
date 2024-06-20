@@ -6,76 +6,116 @@
     <title>Stock Dashboard</title>
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
 </head>
-
 <body>
-    <div class="container">
-        <h2 class="text-center mb-4">Welcome, {{ name }}!</h2>
-        <h2 class="text-center mb-4">Stock Dashboard</h2>
-        <form id="stock-form">
-            <div class="form-row">
-                <div class="col">
-                    <input type="text" id="stock_name" name="stock_name" class="form-control" placeholder="Enter stock symbol..." required>
-                    <span class="text-muted">Find your stock symbol <a href="https://finance.yahoo.com/" target="_blank">here</a></span>
-                </div>
-                <div class="col">
-                    <input type="number" id="stock_volume" name="stock_volume" class="form-control" placeholder="Quantity" required>
-                </div>
-                <div class="col">
-                    <input type="number" id="traded_price" name="traded_price" class="form-control" placeholder="Traded Price" required>
-                </div>
-                <div class="col-auto">
-                    <button type="submit" class="btn btn-primary">Add Stock</button>
-                </div>
+    <header class="dashboard-header">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='logos/logo1.png') }}" alt="Alert-o-folio">
+        </div>
+        </header>
+    <div class="d-flex flex-column min-vh-100">
+        <div class="container mb-auto">
+            <h2 class="text-center mb-4">Welcome, {{ name }}!</h2>
+            <h2 class="text-center mb-4">Dashboard</h2>
+
+            <div>
+                <label for="email_notifications_toggle">Email Notifications</label>
+                <input type="checkbox" id="email_notifications_toggle" class="larger-checkbox"  />
             </div>
-        </form>
-        <table class="table mt-4">
-            <thead class="thead-dark">
-                <tr>
-                    <th>Stock Name</th>
-                    <th>Current Trading Price</th>
-                    <th>Traded Price</th>
-                    <th>Total Volume Purchased</th>
-                    <th>Invested Total</th>
-                    <th>Total Return</th>
-                    <th>Profit/Loss</th>
-                    <th>Invested Return %</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="stock-data">
-                <!-- Dynamic data will be inserted here -->
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="4"><strong>Grand Total Invested</strong></td>
-                    <td id="grand-total-invested"></td>
-                </tr>
-                <tr>
-                    <td colspan="4"><strong>Grand Total Return</strong></td>
-                    <td id="grand-total-return"></td>
-                </tr>
-                <tr>
-                    <td colspan="4"><strong>Grand Profit/Loss</strong></td>
-                    <td id="grand-total-profit-loss"></td>
-                </tr>
-                <tr>
-                    <td colspan="4"><strong>Profit Percent</strong></td>
-                    <td id="profit-percent"></td>
-                </tr>
-            </tfoot>
-        </table>
-        <button onclick="logout()" class="btn btn-danger mt-3">Logout</button>
-        <div id="footer-text" class="text-center mt-3">
-            <!-- Center bottom text -->
+            
+            <form id="stock-form">
+                <div class="about-section">
+                    <h4>About Alert-o-folio</h4>
+                    <p>"Meet Alert-o-Folio, your go-to app for keeping tabs on your stock portfolio hassle-free. Whether you're into investing or just learning the ropes, you can add your favorite stocks, set personal thresholds, and toggle notifications. Get email alerts when your portfolio hits highs or lows you've set, so you're always in the loop without checking constantly. It's ideal for managing real investments or practicing with a dummy portfolio, making it easy to track and stay savvy about your finances."</p>
+                </div>
+                <div class="form-row">
+                    <div class="col">
+                        <input type="text" id="stock_search" class="form-control" placeholder="Enter stock name..." required>
+                        <input type="text" id="symbol_name" name="symbol_name" class="form-control d-none" placeholder="Enter stock symbol..." required>
+                        <span class="text-muted">Find your stocks <a href="https://finance.yahoo.com/" target="_blank">here</a></span>
+                    </div>
+                    <div class="col">
+                        <input type="number" id="stock_volume" name="stock_volume" class="form-control" placeholder="Quantity" required>
+                    </div>
+                    <div class="col">
+                        <input type="number" id="traded_price" name="traded_price" class="form-control" placeholder="Traded Price" required>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-primary">Add Stock</button>
+                    </div>
+                </div>
+            </form>
+            <table class="table mt-4">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Stock Name</th>
+                        <th>Current Trading Price</th>
+                        <th>Traded Price</th>
+                        <th>Total Volume Purchased</th>
+                        <th>Invested Total</th>
+                        <th>Total Return</th>
+                        <th>Profit/Loss</th>
+                        <th>Invested Return %</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="stock-data">
+                    <!-- Dynamic data will be inserted here -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4"><strong>Grand Total Invested</strong></td>
+                        <td id="grand-total-invested"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><strong>Grand Total Return</strong></td>
+                        <td id="grand-total-return"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><strong>Grand Profit/Loss</strong></td>
+                        <td id="grand-total-profit-loss"></td>
+                    </tr>
+                    <tr>
+                        <td colspan="4"><strong>Profit Percent</strong></td>
+                        <td id="profit-percent"></td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <button onclick="logout()" class="btn btn-danger mt-3">Logout</button>
+            <div id="footer-text" class="text-center mt-3">
+                <!-- Center bottom text -->
+            </div> 
         </div>
-        <div class="center-bottom">
-            Created by <a href="https://www.linkedin.com/in/vivek-upadhyay-6689b4184" target="_blank">VivekU</a>
+    </div>
+    
+    <div class="threshold-container mt-auto">
+        <div class="container">
+            <h4>Threshold Settings</h4>
+            <p>
+                This threshold percentage determines the minimum profit percentage you aim to achieve across your entire portfolio. By default, it is set to 0% lower to 10% higher. You can adjust this threshold based on your risk tolerance and investment goals.
+            </p>
+            <form action="{{ url_for('update_thresholds') }}" method="post">
+                <div class="form-group">
+                    <label for="lower_threshold">Lower Threshold %:</label>
+                    <input type="number" id="lower_threshold" name="lower_threshold" class="form-control" step="0.01" value="{{ lower_threshold }}">
+                </div>
+                <div class="form-group">
+                    <label for="upper_threshold">Upper Threshold %:</label>
+                    <input type="number" id="upper_threshold" name="upper_threshold" class="form-control" step="0.01" value="{{ upper_threshold }}">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Update Thresholds</button>
+            </form>
         </div>
-        
     </div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <div class="center-bottom">
+        Created by <a href="https://www.linkedin.com/in/vivek-upadhyay-6689b4184" target="_blank">VivekU</a>
+    </div> 
+    
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script>
@@ -105,7 +145,7 @@
                     data.data.forEach(stock => {
                         const row = document.createElement('tr');
                         row.innerHTML = `
-                            <td><a href="https://finance.yahoo.com/quote/${stock["Stock Name"]}" target="_blank">${stock["Stock Name"]}</a></td>
+                            <td><a href="https://finance.yahoo.com/quote/${stock["Symbol Name"]}" target="_blank">${stock["Symbol Name"]}</a></td>
                             <td>₹${(stock["Current Trading Price"] || 0).toFixed(2)}</td>
                             <td>₹${(stock["Traded Price"] || 0).toFixed(2)}</td>
                             <td>${stock["Total Volume Purchased"] || 0}</td>
@@ -113,7 +153,7 @@
                             <td>₹${(stock["Total Return"] || 0).toFixed(2)}</td>
                             <td style="background-color: ${stock["Profit/Loss"] >= 0 ? 'lightgreen' : 'lightcoral'}">₹${(stock["Profit/Loss"] || 0).toFixed(2)}</td>
                             <td>${(stock["Invested Return%"] || 0).toFixed(2)}%</td>
-                            <td><button class="btn btn-danger btn-sm" onclick="deleteStock('${stock["Stock Name"]}')">Delete</button></td>
+                            <td><button class="btn btn-danger btn-sm" onclick="deleteStock('${stock["Symbol Name"]}')">Delete</button></td>
                         `;
                         tableBody.appendChild(row);
 
@@ -135,7 +175,7 @@
 
         document.getElementById('stock-form').addEventListener('submit', function(event) {
             event.preventDefault();
-            const stockName = document.getElementById('stock_name').value;
+            const symbolName = document.getElementById('symbol_name').value;
             const stockVolume = document.getElementById('stock_volume').value;
             const tradedPrice = document.getElementById('traded_price').value;
             fetch('/add_stock', {
@@ -144,7 +184,7 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    stock_name: stockName,
+                    symbol_name: symbolName,
                     stock_volume: stockVolume,
                     traded_price: tradedPrice
                 })
@@ -156,54 +196,101 @@
             })
             .catch(error => {
                 console.error('Error adding stock:', error);
+                alert('An error occurred while adding the stock.');
             });
         });
 
-        function deleteStock(stockName) {
-            const rows = document.querySelectorAll('#stock-data tr');
-            const stockCount = rows.length;
-
+        function deleteStock(symbolName) {
             fetch('/delete_stock', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ stock_name: stockName })
+                body: JSON.stringify({ symbol_name: symbolName })
             })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
-                console.log("Response from server:", data); // Debug log
-                alert(data.message); // Alert the user about the deletion
-
-                if (stockCount === 1) {
-                    window.location.reload(); // Refresh the page if this was the last stock
-                } else {
-                    fetchStockData(); // Refresh data after deleting stock
-                }
+                alert(data.message);
+                fetchStockData(); // Refresh data after deleting stock
             })
             .catch(error => {
                 console.error('Error deleting stock:', error);
+                alert('An error occurred while deleting the stock.');
             });
         }
 
         function logout() {
-            fetch('/logout').then(() => {
-                window.location.href = '/';
+            fetch('/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/'; // Redirect to home page or login page
+                } else {
+                    response.json().then(data => {
+                        alert(`Logout failed: ${data.message}`);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error during logout:', error);
+                alert('An error occurred during logout.');
             });
         }
 
-        fetchStockData(); // Initial fetch when page loads
-        setInterval(fetchStockData, 60000); // Refresh data every 60 seconds
+        $(document).ready(function() {
+            fetchStockData(); // Initial fetch on page load
+            setInterval(fetchStockData, 10000); // Fetch data every 10 seconds
 
-        document.addEventListener('DOMContentLoaded', () => {
-            if (Notification.permission !== "granted") {
-                Notification.requestPermission();
-            }
+            // Autocomplete functionality
+            $('#stock_search').autocomplete({
+                source: function(request, response) {
+                    $.ajax({
+                        url: "/stock_data",
+                        dataType: "json",
+                        success: function(data) {
+                            let filteredData = data.filter(item => item['SName'].toLowerCase().includes(request.term.toLowerCase()));
+                            response($.map(filteredData, function(item) {
+                                return {
+                                    label: item['SName'] + ' (' + item['Symbol'] + ')',
+                                    value: item['SName'],
+                                    symbol: item['Symbol']
+                                };
+                            }));
+                        }
+                    });
+                },
+                select: function(event, ui) {
+                    $('#symbol_name').val(ui.item.symbol); // Set stock symbol to hidden input
+                }
+            });
+
+            // Fetch email notifications state and set checkbox
+            $.get('/get_email_notifications', function(data) {
+                if (data.email_notifications === 1) {
+                    $('#email_notifications_toggle').prop('checked', true);
+                } else {
+                    $('#email_notifications_toggle').prop('checked', false);
+                }
+            });
+
+            // Handle toggle switch change
+            $('#email_notifications_toggle').change(function() {
+                const email_notifications = $(this).is(':checked') ? 1 : 0;
+                $.ajax({
+                    url: '/update',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ email_notifications: email_notifications }),
+                    success: function(response) {
+                        alert(response.message);
+                    }
+                });
+            });
+
         });
     </script>
 </body>
