@@ -7,6 +7,17 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
+        .signup-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .signup-container h2 {
+            margin-bottom: 20px;
+        }
         .center-bottom {
             position: fixed;
             bottom: 0;
@@ -20,25 +31,33 @@
     </style>
 </head>
 <body>
-    
+    <header class="dashboard-header">
+        <div class="logo-container">
+            <img src="{{ url_for('static', filename='logos/logo1.png') }}" alt="Alert-o-folio">
+        </div>
+        </header>
     <div class="container">
-        <h2 class="text-center mb-4">Sign Up</h2>
-        <form method="POST" action="/signup">
-            <div class="form-group">
-                <label for="name">Name</label>
-                <input type="text" class="form-control" id="name" name="name" required>
-            </div>
-            <div class="form-group">
-                <label for="username">Email</label>
-                <input type="email" class="form-control" placeholder="Please input correct gmail ID" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" class="form-control" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Sign Up</button>
-            <a href="/login" class="btn btn-link">Login</a>
-        </form>
+        <div class="signup-container">
+            <h2 class="text-center">Sign Up</h2>
+            <form method="POST" action="/signup">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="username">Email</label>
+                    <input type="email" class="form-control" placeholder="Please input correct gmail ID" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Sign Up</button>
+                <div class="text-center mt-3">
+                    <span>Already have an account? <a href="/login" class="btn btn-link">Login</a></span>
+                </div>
+            </form>
+        </div>
     </div>
     <div class="center-bottom">
         Created by <a href="https://www.linkedin.com/in/vivek-upadhyay-6689b4184" target="_blank">VivekU</a>
