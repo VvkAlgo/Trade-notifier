@@ -7,6 +7,17 @@
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='styles.css') }}">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
+        .login-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .login-container h2 {
+            margin-bottom: 20px;
+        }
         .center-bottom {
             position: fixed;
             bottom: 0;
@@ -20,20 +31,29 @@
     </style>
 </head>
 <body>
+    <header class="dashboard-header">
+    <div class="logo-container">
+        <img src="{{ url_for('static', filename='logos/logo1.png') }}" alt="Alert-o-folio">
+    </div>
+    </header>
     <div class="container">
-        <h2 class="text-center mb-4">Login</h2>
-        <form method="POST" action="/login">
-            <div class="form-group">
-                <label for="username">Email</label>
-                <input type="email" class="form-control" id="username" name="username" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" class="form-control" id="password" name="password" required>
-            </div>
-            <button type="submit" class="btn btn-primary">Login</button>
-            <a href="/signup" class="btn btn-link">Sign Up</a>
-        </form>
+        <div class="login-container">
+            <h2 class="text-center">Login</h2>
+            <form method="POST" action="/login">
+                <div class="form-group">
+                    <label for="username">Email</label>
+                    <input type="email" class="form-control" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
+                <div class="text-center mt-3">
+                    <span>Don't have an Account? <a href="/signup" class="btn btn-link">Create an Account</a></span>
+                </div>
+            </form>
+        </div>
     </div>
     <div class="center-bottom">
         Created by <a href="https://www.linkedin.com/in/vivek-upadhyay-6689b4184" target="_blank">VivekU</a>
